@@ -1,0 +1,52 @@
+V15 19-POINT ADVERSARIAL BASELINE
+========================================================================
+ARTIFACT=REAL_VERIFIER_V15.cpython-313.pyc
+SIZE=4533
+SHA256=2157b5f7308e4140a75a26da2254767f513885b03ca1adae07afcdd200e4c951
+EXPECTED_SHA256=2157b5f7308e4140a75a26da2254767f513885b03ca1adae07afcdd200e4c951
+HASH_STATUS=PASS
+MODULE_LOAD=PASS
+VERDICTS=['SUPPORTED', 'NOT_SUPPORTED', 'UNKNOWN', 'NOT_EVALUATED', 'ERROR']
+ROLES=['SUPPORTING', 'CONTRADICTING', 'CONTEXTUAL', 'NEUTRAL', 'PROVENANCE_METADATA']
+01 | Positive proof | EXPECTED=SUPPORTED | ACTUAL=SUPPORTED | PASS
+    {'predicate_id': 'P01', 'state': 'SUPPORTED', 'evidence_reference_ids': ['E01']}
+02 | Explicit contradiction | EXPECTED=NOT_SUPPORTED | ACTUAL=NOT_SUPPORTED | PASS
+    {'predicate_id': 'P02', 'state': 'NOT_SUPPORTED', 'evidence_reference_ids': ['E02']}
+03 | Evidence absence | EXPECTED=UNKNOWN | ACTUAL=UNKNOWN | PASS
+    {'predicate_id': 'P03', 'state': 'UNKNOWN', 'evidence_reference_ids': []}
+04 | False SUPPORTING label | EXPECTED=NOT_SUPPORTED | ACTUAL=SUPPORTED | FAIL
+    Claim=1200; evidence=350; role deliberately declared SUPPORTING
+05 | False CONTRADICTING label | EXPECTED=SUPPORTED | ACTUAL=NOT_SUPPORTED | FAIL
+    Claim=1200; evidence=1200; role deliberately declared CONTRADICTING
+06 | Conflicting evidence | EXPECTED=UNKNOWN | ACTUAL=UNKNOWN | PASS
+    {'predicate_id': 'P06', 'state': 'UNKNOWN', 'evidence_reference_ids': ['E06A', 'E06B']}
+07 | Negation handling | EXPECTED=CAPABILITY_REQUIRED | ACTUAL=NO_NEGATION_INTERFACE | FAIL
+    No negation-bearing predicate/claim structure exposed by candidate module
+08 | Numerical mismatch | EXPECTED=NOT_SUPPORTED | ACTUAL=SUPPORTED | FAIL
+    Claim=1200; evidence=350; SUPPORTING label
+09 | Attribution handling | EXPECTED=CAPABILITY_REQUIRED | ACTUAL=NO_ATTRIBUTION_INTERFACE | FAIL
+    No attribution field or attribution predicate evaluation exposed
+10 | Conditional handling | EXPECTED=CAPABILITY_REQUIRED | ACTUAL=NO_CONDITION_INTERFACE | FAIL
+    No condition representation/evaluation interface exposed
+11 | Temporal relationship | EXPECTED=CAPABILITY_REQUIRED | ACTUAL=NO_TEMPORAL_INTERFACE | FAIL
+    Candidate module exposes no temporal predicate representation
+12 | Wrong source/content binding | EXPECTED=REJECTED | ACTUAL=REJECTED | PASS
+    ValueError:SOURCE_DIGEST_MISMATCH
+13 | Wrong digest | EXPECTED=REJECTED | ACTUAL=REJECTED | PASS
+14 | Invalid byte span | EXPECTED=REJECTED | ACTUAL=REJECTED | PASS
+15 | Malformed evidence | EXPECTED=REJECTED | ACTUAL=ACCEPTED | FAIL
+16 | Proof trace completeness | EXPECTED=COMPLETE | ACTUAL=COMPLETE | PASS
+17 | Proof/verdict consistency | EXPECTED=REJECTED | ACTUAL=ACCEPTED_INCONSISTENT | FAIL
+    Predicate state=SUPPORTED; supplied verdict=NOT_SUPPORTED
+18 | Role independence | EXPECTED=ROLE_INDEPENDENT | ACTUAL=ROLE_CONTROLS_RESULT | FAIL
+    SUPPORTING=SUPPORTED; CONTRADICTING=NOT_SUPPORTED
+19 | Altered evidence resistance | EXPECTED=REJECTED | ACTUAL=REJECTED | PASS
+========================================================================
+TOTAL_TESTS=19
+PASS=9
+FAIL=10
+
+NOTE:
+Tests marked CAPABILITY_REQUIRED are deliberate baseline failures.
+They identify semantic capabilities that the candidate module does not expose.
+No missing capability has been fabricated or inferred.

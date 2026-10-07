@@ -1,0 +1,453 @@
+<!-- @format -->
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deterministic Verifier</title>
+
+    <style>
+      body {
+        font-family: system-ui;
+        margin: 0;
+        background: #f5f7fa;
+        color: #182033;
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: auto;
+        padding: 28px;
+      }
+
+      .card {
+        background: white;
+        border: 1px solid #dce2ea;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      textarea,
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 0.5rem solid black;
+        border-radius: 8px;
+        margin: 7px 0 15px;
+      }
+
+      button {
+        padding: 11px 17px;
+        border: 0;
+        border-radius: 8px;
+        background: #2457d6;
+        color: white;
+        font-weight: 700;
+      }
+
+      .muted {
+        color: #687386;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-weight: 800;
+      }
+
+      .SUPPORTED {
+        background: #e9f7ef;
+        color: #18794e;
+      }
+
+      .NOT_SUPPORTED {
+        background: #fdeceb;
+        color: #b42318;
+      }
+
+      .UNKNOWN {
+        background: #fff5d9;
+        color: #9a6700;
+      }
+
+      .NOT_EVALUATED,
+      .ERROR {
+        background: #f1f3f5;
+        color: #495057;
+      }
+
+      .trace {
+        padding: 10px;
+        background: #f7f9fc;
+        border-radius: 8px;
+        margin: 7px 0;
+      }
+
+      .evidence {
+        font-family: Georgia, serif;
+        line-height: 1.65;
+      }
+
+      .candidate {
+        border-left: 4px solid #2457d6;
+        padding: 10px 12px;
+        background: #f8fafc;
+        margin: 8px 0;
+      }
+
+      .warn {
+        background: #fff7df;
+        padding: 12px;
+        border-radius: 8px;
+      }
+
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .claim-result {
+        border: 1px solid #dce2ea;
+        border-radius: 10px;
+        padding: 16px;
+        margin: 12px 0;
+      }
+
+      .claim-result h3 {
+        margin-top: 0;
+      }
+
+      .mode {
+        display: flex;
+        gap: 18px;
+        margin: 8px 0 14px;
+      }
+
+      .mode label {
+        width: auto;
+        margin: 0;
+      }
+
+      .summary {
+        padding: 12px;
+        background: #f7f9fc;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .small {
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <h1>Lawyer V15 Verifier</h1>
+
+      <p class="muted">
+        Real dynamic document verification. AI may find candidate evidence; V15 controls
+        the deterministic verdict.
+      </p>
+
+      <div class="card">
+        <h2>Strict V15 verification</h2>
+
+        <label>Verification engine mode</label>
+        <select id="verificationMode" onchange="setVerificationMode()">
+          <option value="standard">Standard V15 proposition</option>
+          <option value="semantic">Structured V15 semantic proposition</option>
+          <option value="temporal">Structured V15 temporal proposition</option>
+          <option value="authority">Authority analysis (V15 G01 candidate, review-only)</option>
+        </select>
+
+        <div id="structuredHelp" class="warn small hidden">
+          Structured modes require an explicit JSON specification. Identity, scope, polarity, values, temporal fields, and authority relationships are never inferred from AI output. Missing or ambiguous fields fail closed. Authority mode is review-only until G01 is certified.
+        </div>
+
+        <label id="specLabel" class="hidden">Structured V15 specification (JSON)</label>
+        <textarea id="verificationSpec" rows="14" class="hidden" placeholder='Semantic example: {"proposition_id":"P1","identity":{"entity":"contract_A","event_or_attribute":"payment","context":"agreement","target_property":"amount"},"scope":"2026","value":"1000","polarity":"AFFIRMATION","cardinality":"SINGLE","evidence":[{"page":1,"text":"The contract amount was R1000.","identity":{"entity":"contract_A","event_or_attribute":"payment","context":"agreement","target_property":"amount"},"scope":"2026","polarity":"AFFIRMATION","values":["1000"]}]}'></textarea>
+
+        <div class="mode">
+          <label>
+            <input
+              type="radio"
+              name="mode"
+              value="single"
+              checked
+              onchange="setMode()" />
+            Single claim
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="mode"
+              value="multiple"
+              onchange="setMode()" />
+            Multiple claims
+          </label>
+        </div>
+
+        <label id="claimLabel"
+          >Enter claims made by AI or professional in box below(click and drag
+          bottom right corner to resize the input box)
+        </label>
+
+        <textarea
+          id="claim"
+          rows="4"
+          placeholder="Enter the claim exactly as it was produced or received."></textarea>
+
+        <p id="multipleHelp" class="muted small hidden">
+          Enter one claim per line. Numbered or bulleted lines are also
+          accepted.
+        </p>
+
+        <label>Authoritative evidence PDF(s)</label>
+
+        <input id="file" type="file" accept="application/pdf" multiple />
+        <p class="muted small">Upload multiple independent documents when corroboration matters. Two passages from the same document count as one source.</p>
+
+        <label>Required independent supporting sources</label>
+        <input id="requiredSources" type="number" min="1" value="1" />
+
+        <button onclick="verifyClaims()">Verify Claim(s)</button>
+
+        <span id="busy" class="muted"></span>
+      </div>
+
+      <div id="result" class="card hidden">
+        <div class="row">
+          <h2>Verification Results</h2>
+          <span id="count" class="muted"></span>
+        </div>
+
+        <div id="sourceSummary" class="summary"></div>
+
+        <div id="results"></div>
+      </div>
+    </div>
+
+    <script>
+      function setVerificationMode() {
+        const mode = document.getElementById('verificationMode').value;
+        const structured = mode !== 'standard';
+        document.getElementById('structuredHelp').classList.toggle('hidden', !structured);
+        document.getElementById('specLabel').classList.toggle('hidden', !structured);
+        document.getElementById('verificationSpec').classList.toggle('hidden', !structured);
+        if (mode === 'authority') {
+          document.getElementById('verificationSpec').placeholder =
+            'Authority review example: {"target_proposition":"P1","decisions":[{"decision_id":"D1","citation":"Example v Example","court":"Example Court","court_level":"HIGH","jurisdiction":"ZA","decision_date":"2026-01-01","opinion_status":"FINAL","evidence_id":"E1"}],"propositions":[{"proposition_id":"P1","decision_id":"D1","evidence_id":"E2"}],"relationships":[],"status_evidence":[{"status_evidence_id":"S1","target_proposition":"P1","evidence_id":"E3"}],"evidence":[{"evidence_id":"E1","page":1,"text":"..."},{"evidence_id":"E2","page":1,"text":"..."},{"evidence_id":"E3","page":1,"text":"..."}]}';
+        } else if (mode === 'temporal') {
+          document.getElementById('verificationSpec').placeholder =
+            'Temporal example: {"proposition_id":"T1","rule_id":"V15_TEMPORAL","relation":"PRECEDES","left":{"identity":{"entity":"contract_A","event_or_attribute":"filing","context":"case_1","target_property":"date"},"scope":"case_1","start":"2026-01-01","end":"2026-01-02"},"right":{"identity":{"entity":"contract_A","event_or_attribute":"hearing","context":"case_1","target_property":"date"},"scope":"case_1","start":"2026-02-01","end":"2026-02-02"},"evidence":{"page":1,"text":"LEFT_ENTITY=contract_A\nLEFT_EVENT=filing\nLEFT_CONTEXT=case_1\nLEFT_PROPERTY=date\nLEFT_SCOPE=case_1\nLEFT_START=2026-01-01\nLEFT_END=2026-01-02\nRIGHT_ENTITY=contract_A\nRIGHT_EVENT=hearing\nRIGHT_CONTEXT=case_1\nRIGHT_PROPERTY=date\nRIGHT_SCOPE=case_1\nRIGHT_START=2026-02-01\nRIGHT_END=2026-02-02\nRELATION=PRECEDES"}';
+        } else if (mode === 'semantic') {
+          document.getElementById('verificationSpec').placeholder =
+            'Provide the semantic proposition and exact evidence metadata as JSON. Do not rely on AI to supply authoritative identity or scope.';
+        }
+      }
+
+      function setMode() {
+        const multiple =
+          document.querySelector('input[name="mode"]:checked').value ===
+          'multiple';
+
+        document.getElementById('claimLabel').textContent = multiple
+          ? 'Claims to verify'
+          : 'Claim to verify';
+
+        document.getElementById('claim').placeholder = multiple
+          ? `Enter one claim per line. For example:
+The defendant ordered 25 laptop computers.
+The contract price was R425,000.
+The defendant paid R200,000.`
+          : 'Enter the claim exactly as it was produced or received.';
+
+        document
+          .getElementById('multipleHelp')
+          .classList.toggle('hidden', !multiple);
+      }
+
+      async function verifyClaims() {
+        const text = document.getElementById('claim').value.trim();
+        const files = Array.from(document.getElementById('file').files);
+        if (!text || files.length === 0) {
+          alert('Enter at least one claim and choose at least one PDF.');
+          return;
+        }
+
+        document.getElementById('busy').textContent =
+          ' Reading PDF and verifying…';
+
+        const fd = new FormData();
+
+        fd.append('claims', text);
+        fd.append('verification_mode', document.getElementById('verificationMode').value);
+        files.forEach((file) => fd.append('files', file));
+        const specRaw = document.getElementById('verificationSpec').value.trim();
+        const requiredSources = Math.max(1, Number(document.getElementById('requiredSources').value || 1));
+        if (document.getElementById('verificationMode').value === 'standard' && requiredSources > 1) {
+          fd.append('verification_spec', JSON.stringify({required_independent_sources: requiredSources}));
+        } else if (specRaw) {
+          try {
+            const spec = JSON.parse(specRaw);
+            if (requiredSources > 1) spec.required_independent_sources = requiredSources;
+            fd.set('verification_spec', JSON.stringify(spec));
+          } catch (_) {
+            fd.set('verification_spec', specRaw);
+          }
+        }
+
+        try {
+          const response = await fetch('/api/verify', {
+            method: 'POST',
+            body: fd,
+          });
+
+          const data = await response.json();
+
+          document.getElementById('busy').textContent = '';
+
+          const box = document.getElementById('result');
+
+          box.classList.remove('hidden');
+
+          if (!response.ok) {
+            box.innerHTML =
+              "<h2>ERROR</h2><div class='warn'>" +
+              escapeHtml(data.error || 'Verification failed') +
+              '</div>';
+
+            return;
+          }
+
+          document.getElementById('count').textContent =
+            data.claim_count + ' claim(s) checked';
+
+          document.getElementById('sourceSummary').innerHTML =
+            '<b>Evidence sources:</b> ' + data.sources.length +
+            '<br>' + data.sources.map((source) =>
+              escapeHtml(source.filename) + ' · ' + source.pages + ' page(s) · SHA-256 <code>' +
+              escapeHtml(source.source_sha256) + '</code>'
+            ).join('<br>');
+
+          document.getElementById('results').innerHTML = data.results
+            .map(renderResult)
+            .join('');
+        } catch (error) {
+          document.getElementById('busy').textContent = '';
+
+          const box = document.getElementById('result');
+
+          box.classList.remove('hidden');
+
+          box.innerHTML =
+            "<h2>ERROR</h2><div class='warn'>" +
+            escapeHtml(error.message || 'Verification failed') +
+            '</div>';
+        }
+      }
+
+      function renderResult(data, index) {
+        const candidates =
+          (data.sources || []).map((source) => {
+            const sourceCandidates = source.candidates || [];
+            return `<div class="candidate"><b>${escapeHtml(source.filename)}</b>${
+              sourceCandidates.length ? sourceCandidates.map((candidate) =>
+                `<div style="margin-top:8px"><b>Page ${candidate.page}</b> · score ${candidate.score}<br><span class="evidence">${escapeHtml(candidate.text)}</span><br><span class="muted">${escapeHtml(candidate.reason)}</span></div>`
+              ).join('') : '<div class="muted">No candidate evidence located.</div>'
+            }</div>`;
+          }).join('');
+
+        const trace = data.proof_trace
+          .map(
+            (item) =>
+              `<div class="trace">${escapeHtml(JSON.stringify(item))}</div>`,
+          )
+          .join('');
+
+        return `
+          <div class="claim-result">
+            <div class="row">
+              <h3>Claim ${index + 1}</h3>
+
+              <span class="badge ${data.verdict}">
+                ${escapeHtml(data.verdict)}
+              </span>
+            </div>
+
+            <p>
+              <b>Claim:</b>
+              ${escapeHtml(data.claim)}
+            </p>
+            <p class="muted small"><b>Verification ID:</b> <code>${escapeHtml(data.verification_id || '')}</code> · <b>Engine:</b> V15 application dispatcher · <b>Mode:</b> ${escapeHtml(data.verification_mode || 'standard')}</p>
+
+            <div class="${data.lawyer_check_required ? 'warn' : ''}">
+              <b>Reason:</b>
+              ${escapeHtml(data.reason)}
+
+              ${
+                data.lawyer_check_required
+                  ? '<br><b>LAWYER CHECK REQUIRED</b>'
+                  : ''
+              }
+            </div>
+
+            <h4>Candidate evidence</h4>
+
+            ${candidates}
+
+            <h4>Independent corroboration</h4>
+            <div class="summary small">
+              <b>Required independent sources:</b> ${escapeHtml(String(data.corroboration?.required_independent_sources ?? 1))}<br>
+              <b>Supporting sources:</b> ${(data.corroboration?.independent_supporting_sources || []).map(escapeHtml).join(', ') || 'None'}<br>
+              <b>Contradicting sources:</b> ${(data.corroboration?.independent_contradicting_sources || []).map(escapeHtml).join(', ') || 'None'}
+            </div>
+
+            <h4>Proof trace</h4>
+
+            ${trace}
+
+            <div class="warn">
+              <b>AI layer:</b>
+              ${data.ai.enabled ? 'enabled' : 'not configured'}<br>
+
+              ${escapeHtml(data.ai.role)}
+
+              ${
+                data.ai.error
+                  ? '<br>AI error: ' + escapeHtml(data.ai.error)
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, (match) => {
+          const entities = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;',
+          };
+
+          return entities[match];
+        });
+      }
+    </script>
+  </body>
+</html>
